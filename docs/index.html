@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>flarelint // Cloudflare Edge AST Compatibility & Static Analysis</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-main: #0a0a0a;
+      --bg-panel: #121212;
+      --bg-card: #161616;
+      --border-color: #262626;
+      --border-light: #333333;
+      --text-main: #ffffff;
+      --text-muted: #888888;
+      --text-dim: #555555;
+      --accent: #f38020;
+      --accent-dim: #994800;
+      --red: #ff4d4f;
+      --yellow: #faad14;
+      --green: #52c41a;
+      --cyan: #13c2c2;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      border-radius: 0px !important;
+    }
+
+    body {
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    code, pre, .mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Container Grid */
+    .container {
+      max-width: 1280px;
+      margin: 0 auto;
+      border-left: 1px solid var(--border-color);
+      border-right: 1px solid var(--border-color);
+    }
+
+    /* Header */
+    header {
+      border-bottom: 1px solid var(--border-color);
+      padding: 24px 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--bg-panel);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .brand-tag {
+      background: #ffffff;
+      color: #000000;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 4px 8px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .brand-title {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 24px;
+      align-items: center;
+    }
+
+    .nav-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      transition: color 0.15s;
+    }
+
+    .nav-links a:hover {
+      color: var(--text-main);
+    }
+
+    .btn-github {
+      border: 1px solid var(--border-color);
+      padding: 8px 16px;
+      color: var(--text-main);
+      text-decoration: none;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      background: var(--bg-card);
+      transition: background 0.15s, border-color 0.15s;
+    }
+
+    .btn-github:hover {
+      background: #222222;
+      border-color: #555555;
+    }
+
+    /* Hero Section */
+    .hero {
+      border-bottom: 1px solid var(--border-color);
+      padding: 64px 32px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 48px;
+      align-items: center;
+      background: linear-gradient(180deg, var(--bg-panel) 0%, var(--bg-main) 100%);
+    }
+
+    .hero-kicker {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 12px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .hero-title {
+      font-size: 48px;
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      margin-bottom: 20px;
+    }
+
+    .hero-desc {
+      font-size: 16px;
+      color: var(--text-muted);
+      margin-bottom: 32px;
+      max-width: 520px;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+    }
+
+    .btn-primary {
+      background: #ffffff;
+      color: #000000;
+      border: none;
+      padding: 12px 24px;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .btn-primary:hover {
+      background: #e0e0e0;
+    }
+
+    .cmd-badge {
+      border: 1px solid var(--border-color);
+      padding: 11px 18px;
+      background: var(--bg-panel);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      color: #ffffff;
+    }
+
+    /* Terminal Simulation Box */
+    .term-box {
+      border: 1px solid var(--border-color);
+      background: #0d0d0d;
+    }
+
+    .term-header {
+      background: #141414;
+      border-bottom: 1px solid var(--border-color);
+      padding: 10px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+      letter-spacing: 0.05em;
+    }
+
+    .term-body {
+      padding: 20px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      line-height: 1.6;
+      color: #d4d4d4;
+      overflow-x: auto;
+    }
+
+    .term-prompt { color: var(--accent); }
+    .term-ok { color: var(--green); font-weight: bold; }
+    .term-err { color: var(--red); font-weight: bold; }
+    .term-warn { color: var(--yellow); font-weight: bold; }
+    .term-cyan { color: var(--cyan); }
+    .term-dim { color: var(--text-dim); }
+
+    /* Stat Banner Grid */
+    .stat-banner {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      border-bottom: 1px solid var(--border-color);
+      background: var(--bg-panel);
+    }
+
+    .stat-item {
+      padding: 24px 32px;
+      border-right: 1px solid var(--border-color);
+    }
+
+    .stat-item:last-child {
+      border-right: none;
+    }
+
+    .stat-val {
+      font-size: 28px;
+      font-weight: 800;
+      font-family: 'JetBrains Mono', monospace;
+      color: #ffffff;
+      margin-bottom: 4px;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font-weight: 600;
+    }
+
+    /* Rules & Feature Grid */
+    .section-title-bar {
+      border-bottom: 1px solid var(--border-color);
+      padding: 24px 32px;
+      background: #111111;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .section-heading {
+      font-size: 16px;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .rules-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .rule-card {
+      border-right: 1px solid var(--border-color);
+      border-bottom: 1px solid var(--border-color);
+      padding: 32px;
+      background: var(--bg-panel);
+    }
+
+    .rule-card:nth-child(2n) {
+      border-right: none;
+    }
+
+    .rule-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .rule-code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .rule-badge {
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 6px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .badge-error { background: #3a1111; color: var(--red); border: 1px solid #661a1a; }
+    .badge-warn { background: #3a2e11; color: var(--yellow); border: 1px solid #66501a; }
+
+    .rule-name {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .rule-desc {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+    }
+
+    .code-preview {
+      background: #080808;
+      border: 1px solid var(--border-color);
+      padding: 14px;
+      font-size: 12px;
+      color: #cccccc;
+      line-height: 1.5;
+      overflow-x: auto;
+    }
+
+    /* Interactive Rules Playground */
+    .playground-section {
+      padding: 32px;
+      border-bottom: 1px solid var(--border-color);
+      background: var(--bg-panel);
+    }
+
+    .pg-tabs {
+      display: flex;
+      gap: 1px;
+      background: var(--border-color);
+      margin-bottom: 16px;
+      border: 1px solid var(--border-color);
+    }
+
+    .pg-tab {
+      background: var(--bg-card);
+      border: none;
+      color: var(--text-muted);
+      padding: 10px 20px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .pg-tab.active {
+      background: #ffffff;
+      color: #000000;
+    }
+
+    .pg-view {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    /* CLI Reference Table */
+    .cli-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    .cli-table th, .cli-table td {
+      border: 1px solid var(--border-color);
+      padding: 14px 20px;
+      text-align: left;
+    }
+
+    .cli-table th {
+      background: #161616;
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+
+    .cli-table td {
+      background: var(--bg-panel);
+    }
+
+    /* Footer */
+    footer {
+      padding: 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #080808;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    footer a {
+      color: #ffffff;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    @media (max-width: 900px) {
+      .hero { grid-template-columns: 1fr; }
+      .stat-banner { grid-template-columns: 1fr 1fr; }
+      .rules-grid { grid-template-columns: 1fr; }
+      .rule-card { border-right: none; }
+      .pg-view { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <!-- Header -->
+  <header>
+    <div class="brand">
+      <span class="brand-tag">FLARE SUITE</span>
+      <span class="brand-title">flarelint</span>
+    </div>
+    <div class="nav-links">
+      <a href="#rules">Rules</a>
+      <a href="#cli">CLI Commands</a>
+      <a href="#playground">Playground</a>
+      <a href="https://github.com/bhubbard/flarelint" target="_blank" class="btn-github">GitHub →</a>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div>
+      <div class="hero-kicker">Unified Rust AST Static Analysis</div>
+      <h1 class="hero-title">Nanosecond-Fast Edge Linter for Cloudflare & Astro.</h1>
+      <p class="hero-desc">
+        `flarelint` audits Cloudflare Workers, Pages, and Astro edge applications at native Rust speed. Catches unsupported Node.js runtime built-ins, un-awaited promises, transaction hazards, and Pages routing quota limits before deployment.
+      </p>
+      <div class="hero-actions">
+        <a href="#cli" class="btn-primary">Get Started</a>
+        <div class="cmd-badge">cargo install flarelint</div>
+      </div>
+    </div>
+
+    <!-- Live Terminal Simulation -->
+    <div class="term-box">
+      <div class="term-header">
+        <span>terminal // zsh</span>
+        <span>flarelint check .</span>
+      </div>
+      <div class="term-body">
+        <div><span class="term-prompt">❯</span> flarelint check src/</div>
+        <div class="term-dim">─── FLARELINT // EDGE COMPATIBILITY & AST AUDITOR ───</div>
+        <br>
+        <div><span class="term-err">ERROR</span>  <span class="term-cyan">node-compat/strictly-unsupported</span>  src/auth.ts:2:1</div>
+        <div>       Module 'child_process' is strictly unsupported on edge runtime.</div>
+        <br>
+        <div><span class="term-err">ERROR</span>  <span class="term-cyan">waituntil/unawaited-async</span>         src/worker.ts:14:5</div>
+        <div>       Floating promise 'fetch()' in fetch handler will terminate early.</div>
+        <div>       <span class="term-cyan">↳ Fix:</span> Pass promise to 'ctx.waitUntil(...)', or use 'await'.</div>
+        <br>
+        <div><span class="term-warn">WARN</span>   <span class="term-cyan">do-storage/concurrent-write-hazard</span>   src/counter.ts:22:9</div>
+        <div>       Concurrent writes in Promise.all risk non-atomic state mutations.</div>
+        <br>
+        <div><span class="term-err">FAILED</span> // Scanned 38 files in 1.42ms // 2 errors, 1 warning</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Stat Banner Grid -->
+  <section class="stat-banner">
+    <div class="stat-item">
+      <div class="stat-val">&lt; 2.5 µs</div>
+      <div class="stat-label">AST Parse & Lint Per File</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-val">100%</div>
+      <div class="stat-label">Rust 2024 Native Engine</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-val">6 IN 1</div>
+      <div class="stat-label">Consolidated Tools</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-val">0 MS</div>
+      <div class="stat-label">Node / JS Startup Overhead</div>
+    </div>
+  </section>
+
+  <!-- Rules Section -->
+  <section id="rules">
+    <div class="section-title-bar">
+      <div class="section-heading">Consolidated Core Rules</div>
+      <div class="mono term-dim">oxc-ast engine</div>
+    </div>
+
+    <div class="rules-grid">
+      <!-- Rule 1 -->
+      <div class="rule-card">
+        <div class="rule-meta">
+          <span class="rule-code">node-compat</span>
+          <span class="rule-badge badge-error">ERROR / WARN</span>
+        </div>
+        <h3 class="rule-name">Node.js Edge Runtime Auditor</h3>
+        <p class="rule-desc">Audits AST import and require specifiers. Flags strictly unsupported modules (`child_process`, `cluster`, `dgram`, `vm`, `v8`) and verifies `nodejs_compat` configuration.</p>
+        <pre class="code-preview"><code>// ❌ FAILS on Workers edge
+import { spawn } from 'child_process';
+import crypto from 'node:crypto'; // without nodejs_compat
+
+// ✔️ PASSES with nodejs_compat
+import { Buffer } from 'node:buffer';</code></pre>
+      </div>
+
+      <!-- Rule 2 -->
+      <div class="rule-card">
+        <div class="rule-meta">
+          <span class="rule-code">waituntil</span>
+          <span class="rule-badge badge-error">ERROR</span>
+        </div>
+        <h3 class="rule-name">Floating Promise Detector</h3>
+        <p class="rule-desc">Detects background async operations invoked inside request handlers that are neither awaited nor registered via `ctx.waitUntil(promise)`.</p>
+        <pre class="code-preview"><code>// ❌ Terminated prematurely when HTTP response sent
+export default {
+  async fetch(req, env, ctx) {
+    sendTelemetry(req); // floating promise
+    return new Response("OK");
+  }
+}</code></pre>
+      </div>
+
+      <!-- Rule 3 -->
+      <div class="rule-card">
+        <div class="rule-meta">
+          <span class="rule-code">do-storage</span>
+          <span class="rule-badge badge-error">ERROR / WARN</span>
+        </div>
+        <h3 class="rule-name">Durable Object Transaction Safety</h3>
+        <p class="rule-desc">Enforces explicit `await` on storage methods, detects race hazards in `Promise.all` batch writes, and prohibits invalid nested transactions.</p>
+        <pre class="code-preview"><code>// ✔️ Atomically safe Durable Object batch write
+await this.ctx.storage.transaction(async (txn) => {
+  await txn.put("keyA", 1);
+  await txn.put("keyB", 2);
+});</code></pre>
+      </div>
+
+      <!-- Rule 4 -->
+      <div class="rule-card">
+        <div class="rule-meta">
+          <span class="rule-code">routes</span>
+          <span class="rule-badge badge-error">PAGES ROUTER</span>
+        </div>
+        <h3 class="rule-name">Cloudflare Pages _routes.json</h3>
+        <p class="rule-desc">Guarantees compliance with Cloudflare Pages 100-rule limit, verifies trailing wildcard placement, and detects shadowed or unneeded routing rules.</p>
+        <pre class="code-preview"><code>{
+  "version": 1,
+  "include": ["/*"],
+  "exclude": ["/static/*", "/favicon.ico"]
+}</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- Interactive Playground Section -->
+  <section id="playground" class="playground-section">
+    <div class="section-heading" style="margin-bottom: 16px;">Interactive Rule Inspector</div>
+    <div class="pg-tabs">
+      <button class="pg-tab active" onclick="showTab('tab-node')">node-compat</button>
+      <button class="pg-tab" onclick="showTab('tab-wait')">waituntil</button>
+      <button class="pg-tab" onclick="showTab('tab-do')">do-storage</button>
+      <button class="pg-tab" onclick="showTab('tab-routes')">_routes.json</button>
+    </div>
+
+    <div id="tab-node" class="pg-view">
+      <div>
+        <div class="term-header"><span>INPUT SOURCE // TS</span><span>wrangler: nodejs_compat=true</span></div>
+        <pre class="code-preview" style="height: 180px;"><code>import { exec } from 'child_process';
+import { Buffer } from 'buffer';
+import crypto from 'node:crypto';
+
+export default {
+  async fetch() { return new Response('OK'); }
+};</code></pre>
+      </div>
+      <div>
+        <div class="term-header"><span>FLARELINT OUTPUT</span><span>0.8 µs</span></div>
+        <pre class="code-preview" style="height: 180px;"><code class="mono"><span class="term-err">ERROR</span> node-compat/strictly-unsupported:1:1
+      'child_process' is strictly unsupported on edge.
+<span class="term-warn">WARN</span>  node-compat/prefer-node-protocol:2:1
+      Prefer explicit 'node:buffer' specifier.</code></pre>
+      </div>
+    </div>
+
+    <div id="tab-wait" class="pg-view" style="display: none;">
+      <div>
+        <div class="term-header"><span>INPUT SOURCE // JS</span><span>Worker Handler</span></div>
+        <pre class="code-preview" style="height: 180px;"><code>export default {
+  async fetch(req, env, ctx) {
+    fetch('https://analytics.com/log');
+    return new Response("Done");
+  }
+};</code></pre>
+      </div>
+      <div>
+        <div class="term-header"><span>FLARELINT OUTPUT</span><span>0.5 µs</span></div>
+        <pre class="code-preview" style="height: 180px;"><code class="mono"><span class="term-err">ERROR</span> waituntil/unawaited-async:3:5
+      Un-awaited async operation 'fetch()' will be
+      terminated early when response completes.
+      <span class="term-cyan">↳ Suggestion:</span> ctx.waitUntil(fetch(...))</code></pre>
+      </div>
+    </div>
+
+    <div id="tab-do" class="pg-view" style="display: none;">
+      <div>
+        <div class="term-header"><span>INPUT SOURCE // TS</span><span>Durable Object</span></div>
+        <pre class="code-preview" style="height: 180px;"><code>export class Store {
+  async save() {
+    this.ctx.storage.put('key', 1);
+  }
+}</code></pre>
+      </div>
+      <div>
+        <div class="term-header"><span>FLARELINT OUTPUT</span><span>0.6 µs</span></div>
+        <pre class="code-preview" style="height: 180px;"><code class="mono"><span class="term-err">ERROR</span> do-storage/unawaited-storage-op:3:5
+      'this.ctx.storage.put()' must be awaited to
+      guarantee persistence and prevent race hazards.
+      <span class="term-cyan">↳ Fix:</span> await this.ctx.storage.put(...)</code></pre>
+      </div>
+    </div>
+
+    <div id="tab-routes" class="pg-view" style="display: none;">
+      <div>
+        <div class="term-header"><span>INPUT SOURCE // JSON</span><span>_routes.json</span></div>
+        <pre class="code-preview" style="height: 180px;"><code>{
+  "version": 1,
+  "include": ["/*", "/api/*"],
+  "exclude": ["/api/*/private"]
+}</code></pre>
+      </div>
+      <div>
+        <div class="term-header"><span>FLARELINT OUTPUT</span><span>0.4 µs</span></div>
+        <pre class="code-preview" style="height: 180px;"><code class="mono"><span class="term-err">ERROR</span> routes/invalid-glob:4:15
+      Wildcard '*' can only appear at end of route.
+<span class="term-warn">WARN</span>  routes/shadowed-rule:3:15
+      '/api/*' is already shadowed by broader '/*'.</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- CLI Reference Table -->
+  <section id="cli">
+    <div class="section-title-bar">
+      <div class="section-heading">CLI Commands & Subcommands</div>
+      <div class="mono term-dim">clap v4 suite</div>
+    </div>
+
+    <table class="cli-table">
+      <thead>
+        <tr>
+          <th>Command</th>
+          <th>Description</th>
+          <th>Example</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="mono" style="color: var(--accent);">flarelint check [PATH]</td>
+          <td>Runs all rules across JS, TS, Astro, and `_routes.json` files.</td>
+          <td class="mono">flarelint check . --strict</td>
+        </tr>
+        <tr>
+          <td class="mono" style="color: var(--accent);">flarelint node-compat [PATH]</td>
+          <td>Scans for unsupported Node.js runtime built-in modules.</td>
+          <td class="mono">flarelint node-compat src/</td>
+        </tr>
+        <tr>
+          <td class="mono" style="color: var(--accent);">flarelint waituntil [PATH]</td>
+          <td>Detects floating promises inside request/queue handlers.</td>
+          <td class="mono">flarelint waituntil src/</td>
+        </tr>
+        <tr>
+          <td class="mono" style="color: var(--accent);">flarelint do-storage [PATH]</td>
+          <td>Lints Durable Object storage concurrency and transactions.</td>
+          <td class="mono">flarelint do-storage src/</td>
+        </tr>
+        <tr>
+          <td class="mono" style="color: var(--accent);">flarelint routes [PATH]</td>
+          <td>Lints Cloudflare Pages `_routes.json` quotas and globs.</td>
+          <td class="mono">flarelint routes public/_routes.json</td>
+        </tr>
+        <tr>
+          <td class="mono" style="color: var(--accent);">flarelint completions &lt;SHELL&gt;</td>
+          <td>Generates shell completions (`zsh`, `bash`, `fish`, `powershell`).</td>
+          <td class="mono">flarelint completions zsh</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div>FLARELINT // BRANDON HUBBARD DEVELOPER ECOSYSTEM</div>
+    <div>
+      <a href="https://github.com/bhubbard/flarelint" target="_blank">GitHub Repository</a>
+    </div>
+  </footer>
+</div>
+
+<script>
+  function showTab(tabId) {
+    document.querySelectorAll('.pg-view').forEach(el => el.style.display = 'none');
+    document.querySelectorAll('.pg-tab').forEach(el => el.classList.remove('active'));
+    document.getElementById(tabId).style.display = 'grid';
+    event.target.classList.add('active');
+  }
+</script>
+
+</body>
+</html>

@@ -1,0 +1,65 @@
+name: 'Flarelint Cloudflare Linter'
+description: 'Unified nanosecond-fast Rust AST edge compatibility and static analysis linter for Cloudflare Workers & Astro'
+author: 'Brandon Hubbard'
+
+inputs:
+  version:
+    description: 'Flarelint version or git ref to install'
+    required: false
+    default: 'latest'
+  path:
+    description: 'Directory or file path to lint'
+    required: false
+    default: '.'
+  command:
+    description: 'Subcommand to run (check, node-compat, waituntil, do-storage, routes)'
+    required: false
+    default: 'check'
+  strict:
+    description: 'Treat warnings as errors'
+    required: false
+    default: 'false'
+  json:
+    description: 'Output report in JSON format'
+    required: false
+    default: 'false'
+  compatibility-flags:
+    description: 'Comma-separated Cloudflare compatibility flags (e.g. nodejs_compat)'
+    required: false
+    default: ''
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Cache flarelint binary
+      id: cache-flarelint
+      uses: actions/cache@v4
+      with:
+        path: ~/.cargo/bin/flarelint
+        key: ${{ runner.os }}-flarelint-${{ inputs.version }}
+
+    - name: Install flarelint
+      if: steps.cache-flarelint.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        echo "Installing flarelint..."
+        cargo install --git https://github.com/bhubbard/flarelint.git --locked
+
+    - name: Run flarelint
+      shell: bash
+      run: |
+        FLAGS=""
+        if [ "${{ inputs.strict }}" = "true" ]; then
+          FLAGS="$FLAGS --strict"
+        fi
+        if [ "${{ inputs.json }}" = "true" ]; then
+          FLAGS="$FLAGS --json"
+        fi
+        if [ -n "${{ inputs.compatibility-flags }}" ]; then
+          IFS=',' read -ra ADDR <<< "${{ inputs.compatibility-flags }}"
+          for flag in "${ADDR[@]}"; do
+            FLAGS="$FLAGS --compatibility-flag $(echo "$flag" | xargs)"
+          done
+        fi
+
+        flarelint ${{ inputs.command }} "${{ inputs.path }}" $FLAGS
