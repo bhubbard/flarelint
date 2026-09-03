@@ -2,7 +2,7 @@ use oxc_ast::ast::*;
 use std::path::Path;
 
 use crate::diagnostics::Diagnostic;
-use crate::parser::{offset_to_location, AstUnit};
+use crate::parser::{AstUnit, offset_to_location};
 
 pub struct DoStorageLinter<'a> {
     pub file_path: &'a Path,
@@ -35,18 +35,32 @@ impl<'a> DoStorageLinter<'a> {
         Some(lines[target_line - 1].trim().to_string())
     }
 
-    fn is_storage_member_call<'b>(&self, call: &'b CallExpression<'_>) -> Option<(&'b str, String)> {
+    fn is_storage_member_call<'b>(
+        &self,
+        call: &'b CallExpression<'_>,
+    ) -> Option<(&'b str, String)> {
         if let Some(mem) = call.callee.as_member_expression()
             && let Some(prop_name) = mem.static_property_name()
             && matches!(
                 prop_name,
-                "put" | "get" | "delete" | "deleteAll" | "list" | "getAlarm" | "setAlarm" | "deleteAlarm" | "sync" | "transaction" | "sql"
-            ) {
-                let obj = mem.object();
-                if self.is_storage_object(obj) {
-                    return Some((prop_name, self.format_member_expr(mem)));
-                }
+                "put"
+                    | "get"
+                    | "delete"
+                    | "deleteAll"
+                    | "list"
+                    | "getAlarm"
+                    | "setAlarm"
+                    | "deleteAlarm"
+                    | "sync"
+                    | "transaction"
+                    | "sql"
+            )
+        {
+            let obj = mem.object();
+            if self.is_storage_object(obj) {
+                return Some((prop_name, self.format_member_expr(mem)));
             }
+        }
         None
     }
 
@@ -71,9 +85,10 @@ impl<'a> DoStorageLinter<'a> {
     fn is_storage_object(&self, expr: &Expression<'_>) -> bool {
         if let Some(mem) = expr.as_member_expression() {
             if let Some(prop) = mem.static_property_name()
-                && prop == "storage" {
-                    return true;
-                }
+                && prop == "storage"
+            {
+                return true;
+            }
             if let Expression::ThisExpression(_) = mem.object() {
                 return mem.static_property_name() == Some("storage")
                     || mem.static_property_name() == Some("ctx")
@@ -100,19 +115,21 @@ impl<'a> DoStorageLinter<'a> {
                     self.visit_declaration(decl, ast);
                 }
             }
-            Statement::ExportDefaultDeclaration(export_default) => match &export_default.declaration {
-                ExportDefaultDeclarationKind::ClassDeclaration(cls) => {
-                    self.visit_class(cls, ast);
-                }
-                ExportDefaultDeclarationKind::FunctionDeclaration(func) => {
-                    self.visit_function(func, ast);
-                }
-                decl => {
-                    if let Some(expr) = decl.as_expression() {
-                        self.visit_expression(expr, ast);
+            Statement::ExportDefaultDeclaration(export_default) => {
+                match &export_default.declaration {
+                    ExportDefaultDeclarationKind::ClassDeclaration(cls) => {
+                        self.visit_class(cls, ast);
+                    }
+                    ExportDefaultDeclarationKind::FunctionDeclaration(func) => {
+                        self.visit_function(func, ast);
+                    }
+                    decl => {
+                        if let Some(expr) = decl.as_expression() {
+                            self.visit_expression(expr, ast);
+                        }
                     }
                 }
-            },
+            }
             Statement::ExpressionStatement(expr_stmt) => {
                 if let Expression::CallExpression(call) = &expr_stmt.expression
                     && let Some((method, display_name)) = self.is_storage_member_call(call)
@@ -227,11 +244,12 @@ impl<'a> DoStorageLinter<'a> {
     fn visit_class(&mut self, cls: &Class<'_>, ast: &AstUnit<'_>) {
         for elem in &cls.body.body {
             if let ClassElement::MethodDefinition(m) = elem
-                && let Some(body) = &m.value.body {
-                    for s in &body.statements {
-                        self.visit_statement(s, ast);
-                    }
+                && let Some(body) = &m.value.body
+            {
+                for s in &body.statements {
+                    self.visit_statement(s, ast);
                 }
+            }
         }
     }
 
@@ -289,7 +307,9 @@ impl<'a> DoStorageLinter<'a> {
                         return;
                     }
 
-                    if self.in_transaction_depth > 0 && (display_name.starts_with("this.") || display_name.starts_with("state.")) {
+                    if self.in_transaction_depth > 0
+                        && (display_name.starts_with("this.") || display_name.starts_with("state."))
+                    {
                         let loc = offset_to_location(
                             self.full_source,
                             ast.byte_offset,
@@ -378,4 +398,3 @@ impl<'a> DoStorageLinter<'a> {
         false
     }
 }
-

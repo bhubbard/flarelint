@@ -1,12 +1,12 @@
 use clap::{Command, CommandFactory, Parser, Subcommand, ValueEnum};
-use clap_complete::{generate, Shell};
+use clap_complete::{Shell, generate};
 use std::io;
 use std::path::PathBuf;
 use std::process::ExitCode;
 
 use flarelint::config::CloudflareConfig;
 use flarelint::formatter::{format_report_human, format_report_json};
-use flarelint::rules::{run_linter_on_target, RuleCategory};
+use flarelint::rules::{RuleCategory, run_linter_on_target};
 
 #[derive(Parser, Debug)]
 #[command(
@@ -114,7 +114,12 @@ impl From<ShellChoice> for Shell {
 }
 
 fn print_completions<G: clap_complete::Generator>(generator: G, cmd: &mut Command) {
-    generate(generator, cmd, cmd.get_name().to_string(), &mut io::stdout());
+    generate(
+        generator,
+        cmd,
+        cmd.get_name().to_string(),
+        &mut io::stdout(),
+    );
 }
 
 fn main() -> ExitCode {
@@ -171,4 +176,3 @@ fn main() -> ExitCode {
         ExitCode::SUCCESS
     }
 }
-

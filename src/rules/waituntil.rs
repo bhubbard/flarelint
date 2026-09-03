@@ -2,7 +2,7 @@ use oxc_ast::ast::*;
 use std::path::Path;
 
 use crate::diagnostics::Diagnostic;
-use crate::parser::{offset_to_location, AstUnit};
+use crate::parser::{AstUnit, offset_to_location};
 
 pub struct WaitUntilLinter<'a> {
     pub file_path: &'a Path,
@@ -51,9 +51,20 @@ impl<'a> WaitUntilLinter<'a> {
                                     let key_name = self.get_property_key_name(&p.key);
                                     if matches!(
                                         key_name.as_deref(),
-                                        Some("fetch" | "scheduled" | "queue" | "email" | "tail" | "trace")
+                                        Some(
+                                            "fetch"
+                                                | "scheduled"
+                                                | "queue"
+                                                | "email"
+                                                | "tail"
+                                                | "trace"
+                                        )
                                     ) {
-                                        self.lint_handler_property(p, key_name.as_deref().unwrap(), ast);
+                                        self.lint_handler_property(
+                                            p,
+                                            key_name.as_deref().unwrap(),
+                                            ast,
+                                        );
                                     }
                                 }
                             }
@@ -64,7 +75,18 @@ impl<'a> WaitUntilLinter<'a> {
             Statement::ExportNamedDeclaration(export_named) => {
                 if let Some(Declaration::FunctionDeclaration(func)) = &export_named.declaration
                     && let Some(ident) = &func.id
-                    && matches!(ident.name.as_str(), "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "ALL" | "onRequest" | "onRequestGet" | "onRequestPost")
+                    && matches!(
+                        ident.name.as_str(),
+                        "GET"
+                            | "POST"
+                            | "PUT"
+                            | "DELETE"
+                            | "PATCH"
+                            | "ALL"
+                            | "onRequest"
+                            | "onRequestGet"
+                            | "onRequestPost"
+                    )
                 {
                     self.lint_function_handler(func, ident.name.as_str(), ast);
                 }
@@ -116,16 +138,29 @@ impl<'a> WaitUntilLinter<'a> {
         false
     }
 
-    fn lint_handler_property(&mut self, prop: &ObjectProperty<'_>, handler_name: &str, ast: &AstUnit<'_>) {
+    fn lint_handler_property(
+        &mut self,
+        prop: &ObjectProperty<'_>,
+        handler_name: &str,
+        ast: &AstUnit<'_>,
+    ) {
         match &prop.value {
             Expression::FunctionExpression(func) => {
                 self.lint_function_handler(func, handler_name, ast);
             }
             Expression::ArrowFunctionExpression(arrow) => {
                 let ctx_name = if arrow.params.items.len() >= 3 {
-                    arrow.params.items.get(2).and_then(|p| self.get_param_name(&p.pattern))
+                    arrow
+                        .params
+                        .items
+                        .get(2)
+                        .and_then(|p| self.get_param_name(&p.pattern))
                 } else if arrow.params.items.len() == 1 {
-                    arrow.params.items.first().and_then(|p| self.get_param_name(&p.pattern))
+                    arrow
+                        .params
+                        .items
+                        .first()
+                        .and_then(|p| self.get_param_name(&p.pattern))
                 } else {
                     None
                 };
@@ -153,11 +188,22 @@ impl<'a> WaitUntilLinter<'a> {
         }
     }
 
-    fn lint_function_handler(&mut self, func: &Function<'_>, _handler_name: &str, ast: &AstUnit<'_>) {
+    fn lint_function_handler(
+        &mut self,
+        func: &Function<'_>,
+        _handler_name: &str,
+        ast: &AstUnit<'_>,
+    ) {
         let ctx_name = if func.params.items.len() >= 3 {
-            func.params.items.get(2).and_then(|p| self.get_param_name(&p.pattern))
+            func.params
+                .items
+                .get(2)
+                .and_then(|p| self.get_param_name(&p.pattern))
         } else if func.params.items.len() == 1 {
-            func.params.items.first().and_then(|p| self.get_param_name(&p.pattern))
+            func.params
+                .items
+                .first()
+                .and_then(|p| self.get_param_name(&p.pattern))
         } else {
             None
         };
@@ -187,7 +233,11 @@ impl<'a> WaitUntilLinter<'a> {
                     self.lint_function_handler(func, "eventListener", ast);
                 }
                 Expression::ArrowFunctionExpression(arrow) => {
-                    let event_name = arrow.params.items.first().and_then(|p| self.get_param_name(&p.pattern));
+                    let event_name = arrow
+                        .params
+                        .items
+                        .first()
+                        .and_then(|p| self.get_param_name(&p.pattern));
                     let prev_in_scope = self.in_handler_scope;
                     let prev_ctx = self.handler_ctx_name.clone();
                     self.in_handler_scope = true;
@@ -217,7 +267,12 @@ impl<'a> WaitUntilLinter<'a> {
     fn visit_handler_statement(&mut self, stmt: &Statement<'_>, ast: &AstUnit<'_>) {
         match stmt {
             Statement::ExpressionStatement(expr_stmt) => {
-                self.check_handler_expression(&expr_stmt.expression, expr_stmt.span.start, expr_stmt.span.end, ast);
+                self.check_handler_expression(
+                    &expr_stmt.expression,
+                    expr_stmt.span.start,
+                    expr_stmt.span.end,
+                    ast,
+                );
             }
             Statement::BlockStatement(block) => {
                 for s in &block.body {
@@ -269,7 +324,13 @@ impl<'a> WaitUntilLinter<'a> {
         match &call.callee {
             Expression::Identifier(ident) => {
                 let name = ident.name.as_str();
-                if name == "fetch" || name.starts_with("send") || name.starts_with("log") || name.starts_with("save") || name.starts_with("track") || name.ends_with("Async") {
+                if name == "fetch"
+                    || name.starts_with("send")
+                    || name.starts_with("log")
+                    || name.starts_with("save")
+                    || name.starts_with("track")
+                    || name.ends_with("Async")
+                {
                     return Some(name.to_string());
                 }
                 if name != "console" && !name.starts_with("assert") {
@@ -279,7 +340,21 @@ impl<'a> WaitUntilLinter<'a> {
             _ => {
                 if let Some(mem) = call.callee.as_member_expression()
                     && let Some(prop) = mem.static_property_name()
-                    && matches!(prop, "put" | "get" | "delete" | "list" | "post" | "send" | "track" | "query" | "exec" | "run" | "fetch" | "write")
+                    && matches!(
+                        prop,
+                        "put"
+                            | "get"
+                            | "delete"
+                            | "list"
+                            | "post"
+                            | "send"
+                            | "track"
+                            | "query"
+                            | "exec"
+                            | "run"
+                            | "fetch"
+                            | "write"
+                    )
                 {
                     return Some(format!(".{}()", prop));
                 }
@@ -289,16 +364,17 @@ impl<'a> WaitUntilLinter<'a> {
         None
     }
 
-    fn check_handler_expression(&mut self, expr: &Expression<'_>, span_start: u32, span_end: u32, ast: &AstUnit<'_>) {
+    fn check_handler_expression(
+        &mut self,
+        expr: &Expression<'_>,
+        span_start: u32,
+        span_end: u32,
+        ast: &AstUnit<'_>,
+    ) {
         if let Expression::CallExpression(call) = expr
             && let Some(call_desc) = self.is_suspect_floating_promise(call)
         {
-            let loc = offset_to_location(
-                self.full_source,
-                ast.byte_offset,
-                span_start,
-                span_end,
-            );
+            let loc = offset_to_location(self.full_source, ast.byte_offset, span_start, span_end);
 
             let ctx_var = self.handler_ctx_name.as_deref().unwrap_or("ctx");
             let mut diag = Diagnostic::error(
@@ -322,4 +398,3 @@ impl<'a> WaitUntilLinter<'a> {
         }
     }
 }
-

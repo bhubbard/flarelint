@@ -1,0 +1,52 @@
+{
+  "name": "flarelint",
+  "version": "0.1.0",
+  "description": "Unified, nanosecond-fast Rust AST static analysis and edge compatibility linter for Cloudflare Workers & Astro applications",
+  "keywords": [
+    "cloudflare",
+    "workers",
+    "astro",
+    "oxc",
+    "linter",
+    "rust",
+    "durable-objects",
+    "edge"
+  ],
+  "homepage": "https://bhubbard.github.io/flarelint",
+  "bugs": {
+    "url": "https://github.com/bhubbard/flarelint/issues"
+  },
+  "license": "MIT OR Apache-2.0",
+  "author": "Brandon Hubbard <bkhubbard@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bhubbard/flarelint.git"
+  },
+  "bin": {
+    "flarelint": "bin/flarelint.js"
+  },
+  "files": [
+    "bin",
+    "scripts/postinstall.mjs",
+    "Cargo.toml",
+    "Cargo.lock",
+    "src",
+    "README.md",
+    "LICENSE-MIT",
+    "LICENSE-APACHE"
+  ],
+  "type": "module",
+  "scripts": {
+    "build:cargo": "cargo build --release",
+    "postinstall": "node scripts/postinstall.mjs",
+    "prepare:publish": "node scripts/set-optional-deps.mjs",
+    "test": "cargo test"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "//optionalDependencies": [
+    "The @flarelint/* prebuilt-binary packages are attached at publish",
+    "time by scripts/set-optional-deps.mjs, not committed here."
+  ]
+}

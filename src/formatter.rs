@@ -76,7 +76,9 @@ pub fn format_report_human(report: &LintReport, verbose: bool) -> String {
         }
 
         table.add_row(vec![
-            Cell::new(sev_str).fg(sev_color).add_attribute(Attribute::Bold),
+            Cell::new(sev_str)
+                .fg(sev_color)
+                .add_attribute(Attribute::Bold),
             Cell::new(&diag.rule).fg(Color::Cyan),
             Cell::new(loc_str).fg(Color::DarkGrey),
             Cell::new(msg_content),
@@ -87,9 +89,7 @@ pub fn format_report_human(report: &LintReport, verbose: bool) -> String {
     out.push('\n');
 
     for diag in &report.diagnostics {
-        if !verbose
-            && let Some(suggestion) = &diag.suggestion
-        {
+        if !verbose && let Some(suggestion) = &diag.suggestion {
             let loc_str = if let Some(loc) = &diag.location {
                 format!("{}:{}", diag.file_path.display(), loc.line)
             } else {
@@ -124,5 +124,6 @@ pub fn format_report_human(report: &LintReport, verbose: bool) -> String {
 }
 
 pub fn format_report_json(report: &LintReport) -> Result<String, String> {
-    serde_json::to_string_pretty(report).map_err(|e| format!("Failed to serialize JSON report: {}", e))
+    serde_json::to_string_pretty(report)
+        .map_err(|e| format!("Failed to serialize JSON report: {}", e))
 }

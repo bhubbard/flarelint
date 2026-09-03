@@ -67,7 +67,16 @@ pub fn should_ignore_entry(path: &Path) -> bool {
     if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
         matches!(
             name,
-            "node_modules" | "dist" | ".wrangler" | ".astro" | "build" | "target" | "coverage" | ".git" | ".turbo" | ".next"
+            "node_modules"
+                | "dist"
+                | ".wrangler"
+                | ".astro"
+                | "build"
+                | "target"
+                | "coverage"
+                | ".git"
+                | ".turbo"
+                | ".next"
         )
     } else {
         false
@@ -202,6 +211,5 @@ pub fn offset_to_location(
 }
 
 pub fn read_file_string(path: &Path) -> Result<String, String> {
-    fs::read_to_string(path)
-        .map_err(|e| format!("Failed to read file {}: {}", path.display(), e))
+    fs::read_to_string(path).map_err(|e| format!("Failed to read file {}: {}", path.display(), e))
 }

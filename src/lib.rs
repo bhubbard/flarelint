@@ -6,4 +6,4 @@ pub mod rules;
 
 pub use config::CloudflareConfig;
 pub use diagnostics::{Diagnostic, FixSuggestion, LintReport, Severity, SourceLocation};
-pub use rules::{run_linter_on_target, RuleCategory};
+pub use rules::{RuleCategory, run_linter_on_target};

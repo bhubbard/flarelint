@@ -3,7 +3,7 @@ use std::path::Path;
 
 use crate::config::CloudflareConfig;
 use crate::diagnostics::Diagnostic;
-use crate::parser::{offset_to_location, AstUnit};
+use crate::parser::{AstUnit, offset_to_location};
 
 pub const STRICTLY_UNSUPPORTED_MODULES: &[&str] = &[
     "child_process",
@@ -108,7 +108,13 @@ impl<'a> NodeCompatLinter<'a> {
         }
     }
 
-    fn check_specifier(&mut self, specifier: &str, span_start: u32, span_end: u32, ast: &AstUnit<'_>) {
+    fn check_specifier(
+        &mut self,
+        specifier: &str,
+        span_start: u32,
+        span_end: u32,
+        ast: &AstUnit<'_>,
+    ) {
         let is_node_prefixed = specifier.starts_with("node:");
         let base_module = normalize_module_specifier(specifier);
 
@@ -116,12 +122,7 @@ impl<'a> NodeCompatLinter<'a> {
             return;
         }
 
-        let loc = offset_to_location(
-            self.full_source,
-            ast.byte_offset,
-            span_start,
-            span_end,
-        );
+        let loc = offset_to_location(self.full_source, ast.byte_offset, span_start, span_end);
 
         if is_strictly_unsupported(base_module) {
             let mut diag = Diagnostic::error(
@@ -213,12 +214,7 @@ impl<'a> NodeCompatLinter<'a> {
             Statement::ExportNamedDeclaration(export_decl) => {
                 if let Some(source) = &export_decl.source {
                     let specifier = source.value.as_str();
-                    self.check_specifier(
-                        specifier,
-                        source.span.start,
-                        source.span.end,
-                        ast,
-                    );
+                    self.check_specifier(specifier, source.span.start, source.span.end, ast);
                 }
                 if let Some(decl) = &export_decl.declaration {
                     self.visit_declaration(decl, ast);
@@ -412,12 +408,7 @@ impl<'a> NodeCompatLinter<'a> {
                     && let Some(first_arg) = call.arguments.first()
                     && let Some(Expression::StringLiteral(lit)) = first_arg.as_expression()
                 {
-                    self.check_specifier(
-                        lit.value.as_str(),
-                        lit.span.start,
-                        lit.span.end,
-                        ast,
-                    );
+                    self.check_specifier(lit.value.as_str(), lit.span.start, lit.span.end, ast);
                 }
                 self.visit_expression(&call.callee, ast);
                 for arg in &call.arguments {
@@ -428,12 +419,7 @@ impl<'a> NodeCompatLinter<'a> {
             }
             Expression::ImportExpression(imp) => {
                 if let Expression::StringLiteral(lit) = &imp.source {
-                    self.check_specifier(
-                        lit.value.as_str(),
-                        lit.span.start,
-                        lit.span.end,
-                        ast,
-                    );
+                    self.check_specifier(lit.value.as_str(), lit.span.start, lit.span.end, ast);
                 } else {
                     self.visit_expression(&imp.source, ast);
                 }

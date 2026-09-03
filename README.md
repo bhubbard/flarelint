@@ -22,7 +22,16 @@
 
 ### Cargo
 ```bash
-cargo install --git https://github.com/bhubbard/flarelint.git --locked
+cargo install flarelint
+```
+
+### npm / npx
+```bash
+# Run immediately via npx
+npx flarelint check .
+
+# Or install locally in your project
+npm install -D flarelint
 ```
 
 ### GitHub Actions

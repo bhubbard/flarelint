@@ -1,5 +1,5 @@
 use flarelint::config::CloudflareConfig;
-use flarelint::rules::{run_linter_on_target, RuleCategory};
+use flarelint::rules::{RuleCategory, run_linter_on_target};
 use std::fs;
 use tempfile::tempdir;
 
@@ -27,8 +27,15 @@ export default {
 
     let report = run_linter_on_target(dir.path(), RuleCategory::NodeCompat, Some(config)).unwrap();
     assert_eq!(report.error_count, 2);
-    assert!(report.diagnostics.iter().any(|d| d.rule == "node-compat/strictly-unsupported" && d.message.contains("child_process")));
-    assert!(report.diagnostics.iter().any(|d| d.rule == "node-compat/strictly-unsupported" && d.message.contains("cluster")));
+    assert!(report.diagnostics.iter().any(
+        |d| d.rule == "node-compat/strictly-unsupported" && d.message.contains("child_process")
+    ));
+    assert!(
+        report
+            .diagnostics
+            .iter()
+            .any(|d| d.rule == "node-compat/strictly-unsupported" && d.message.contains("cluster"))
+    );
 }
 
 #[test]
@@ -47,7 +54,12 @@ const path = require('path');
     let config = CloudflareConfig::default(); // no nodejs_compat flag
     let report = run_linter_on_target(dir.path(), RuleCategory::NodeCompat, Some(config)).unwrap();
     assert_eq!(report.error_count, 2);
-    assert!(report.diagnostics.iter().all(|d| d.rule == "node-compat/missing-flag"));
+    assert!(
+        report
+            .diagnostics
+            .iter()
+            .all(|d| d.rule == "node-compat/missing-flag")
+    );
 }
 
 #[test]
@@ -69,7 +81,12 @@ import { EventEmitter } from 'events';
     let report = run_linter_on_target(dir.path(), RuleCategory::NodeCompat, Some(config)).unwrap();
     assert_eq!(report.error_count, 0);
     assert_eq!(report.warning_count, 2);
-    assert!(report.diagnostics.iter().all(|d| d.rule == "node-compat/prefer-node-protocol"));
+    assert!(
+        report
+            .diagnostics
+            .iter()
+            .all(|d| d.rule == "node-compat/prefer-node-protocol")
+    );
 }
 
 #[test]
@@ -174,8 +191,18 @@ export class Counter {
     .unwrap();
 
     let report = run_linter_on_target(dir.path(), RuleCategory::DoStorage, None).unwrap();
-    assert!(report.diagnostics.iter().any(|d| d.rule == "do-storage/unawaited-storage-op"));
-    assert!(report.diagnostics.iter().any(|d| d.rule == "do-storage/concurrent-write-hazard"));
+    assert!(
+        report
+            .diagnostics
+            .iter()
+            .any(|d| d.rule == "do-storage/unawaited-storage-op")
+    );
+    assert!(
+        report
+            .diagnostics
+            .iter()
+            .any(|d| d.rule == "do-storage/concurrent-write-hazard")
+    );
 }
 
 #[test]
@@ -214,7 +241,12 @@ fn test_routes_json_limits_and_globs() {
     fs::write(&file, large_routes).unwrap();
 
     let report2 = run_linter_on_target(dir.path(), RuleCategory::Routes, None).unwrap();
-    assert!(report2.diagnostics.iter().any(|d| d.rule == "routes/exceeds-limit"));
+    assert!(
+        report2
+            .diagnostics
+            .iter()
+            .any(|d| d.rule == "routes/exceeds-limit")
+    );
 }
 
 #[test]

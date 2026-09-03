@@ -50,7 +50,10 @@ impl<'a> RoutesLinter<'a> {
             let loc = self.find_line_offset("\"version\"");
             let diag = Diagnostic::error(
                 "routes/invalid-version",
-                format!("Invalid version {}. Cloudflare Pages requires version: 1", config.version),
+                format!(
+                    "Invalid version {}. Cloudflare Pages requires version: 1",
+                    config.version
+                ),
                 self.file_path,
             )
             .with_location(loc)
@@ -94,7 +97,10 @@ impl<'a> RoutesLinter<'a> {
                 self.file_path,
             )
             .with_location(SourceLocation::new(1, 1, 0, 0))
-            .with_suggestion("Add '\"include\": [\"/*\"]'", Some("\"include\": [\"/*\"]".to_string()));
+            .with_suggestion(
+                "Add '\"include\": [\"/*\"]'",
+                Some("\"include\": [\"/*\"]".to_string()),
+            );
             self.diagnostics.push(diag);
         }
 
@@ -136,7 +142,10 @@ impl<'a> RoutesLinter<'a> {
                     let loc = self.find_line_offset(r2);
                     let diag = Diagnostic::warning(
                         "routes/shadowed-rule",
-                        format!("Include rule '{}' is redundant because it is already matched by '{}'.", r2, r1),
+                        format!(
+                            "Include rule '{}' is redundant because it is already matched by '{}'.",
+                            r2, r1
+                        ),
                         self.file_path,
                     )
                     .with_location(loc)
@@ -147,7 +156,10 @@ impl<'a> RoutesLinter<'a> {
         }
 
         for exc in &config.exclude {
-            let matched_by_any = config.include.iter().any(|inc| self.pattern_matches_or_overlaps(inc, exc));
+            let matched_by_any = config
+                .include
+                .iter()
+                .any(|inc| self.pattern_matches_or_overlaps(inc, exc));
             if !matched_by_any && !config.include.is_empty() {
                 let loc = self.find_line_offset(exc);
                 let diag = Diagnostic::warning(
@@ -172,14 +184,18 @@ impl<'a> RoutesLinter<'a> {
                 self.file_path,
             )
             .with_location(loc)
-            .with_suggestion(format!("Prepend '/' to '/{}'", pattern.trim_start_matches('/')), Some(format!("/{}", pattern)));
+            .with_suggestion(
+                format!("Prepend '/' to '/{}'", pattern.trim_start_matches('/')),
+                Some(format!("/{}", pattern)),
+            );
             self.diagnostics.push(diag);
             return;
         }
 
         if let Some(star_pos) = pattern.find('*')
-            && star_pos != pattern.len() - 1 {
-                let diag = Diagnostic::error(
+            && star_pos != pattern.len() - 1
+        {
+            let diag = Diagnostic::error(
                     "routes/invalid-glob",
                     format!(
                         "Cloudflare Pages wildcards ('*') can only appear at the end of a route pattern (e.g. '/api/*'). In '{}', wildcard is at position {}.",
@@ -192,13 +208,16 @@ impl<'a> RoutesLinter<'a> {
                     "Move wildcard to the end of the prefix or use exact matching.",
                     None,
                 );
-                self.diagnostics.push(diag);
-            }
+            self.diagnostics.push(diag);
+        }
 
         if pattern.contains("//") {
             let diag = Diagnostic::warning(
                 "routes/double-slash",
-                format!("Route pattern '{}' contains consecutive slashes '//'", pattern),
+                format!(
+                    "Route pattern '{}' contains consecutive slashes '//'",
+                    pattern
+                ),
                 self.file_path,
             )
             .with_location(loc);
@@ -211,8 +230,10 @@ impl<'a> RoutesLinter<'a> {
             return true;
         }
         if let Some(prefix) = broader.strip_suffix("/*")
-            && narrower.starts_with(prefix) && narrower != broader {
-                return true;
+            && narrower.starts_with(prefix)
+            && narrower != broader
+        {
+            return true;
         }
         false
     }
@@ -222,8 +243,9 @@ impl<'a> RoutesLinter<'a> {
             return true;
         }
         if let Some(prefix) = include.strip_suffix("/*")
-            && exclude.starts_with(prefix) {
-                return true;
+            && exclude.starts_with(prefix)
+        {
+            return true;
         }
         if include == exclude {
             return true;
@@ -244,4 +266,3 @@ impl<'a> RoutesLinter<'a> {
         SourceLocation::new(1, 1, 0, query.len())
     }
 }
-

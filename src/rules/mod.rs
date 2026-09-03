@@ -81,8 +81,7 @@ pub fn run_linter_on_target(
             match parse_ast(&allocator, &script) {
                 Ok(ast) => {
                     if category == RuleCategory::All || category == RuleCategory::NodeCompat {
-                        let mut node_linter =
-                            NodeCompatLinter::new(&file_path, &content, &config);
+                        let mut node_linter = NodeCompatLinter::new(&file_path, &content, &config);
                         node_linter.lint_ast(&ast);
                         for diag in node_linter.diagnostics {
                             report.add_diagnostic(diag);
