@@ -1,6 +1,6 @@
 use oxc_allocator::Allocator;
 use oxc_ast::ast::Program;
-use oxc_parser::Parser;
+use oxc_parser::{ParseOptions, Parser};
 use oxc_span::SourceType;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -168,7 +168,13 @@ pub fn parse_ast<'a>(
     allocator: &'a Allocator,
     script: &SourceScript<'a>,
 ) -> Result<AstUnit<'a>, String> {
-    let ret = Parser::new(allocator, script.content, script.source_type).parse();
+    let parse_options = ParseOptions {
+        allow_return_outside_function: script.is_astro_frontmatter,
+        ..ParseOptions::default()
+    };
+    let ret = Parser::new(allocator, script.content, script.source_type)
+        .with_options(parse_options)
+        .parse();
 
     if !ret.errors.is_empty() {
         let first_err = &ret.errors[0];

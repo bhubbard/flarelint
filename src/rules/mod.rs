@@ -35,8 +35,8 @@ pub fn run_linter_on_target(
     let start_time = Instant::now();
     let mut report = LintReport::new();
 
-    let config = if let Some(cfg) = override_config {
-        cfg
+    let config = if let Some(ref cfg) = override_config {
+        cfg.clone()
     } else {
         CloudflareConfig::find_and_load(target_path).unwrap_or_default()
     };
@@ -75,13 +75,19 @@ pub fn run_linter_on_target(
             }
         };
 
+        let effective_config = if let Some(ref cfg) = override_config {
+            cfg.clone()
+        } else {
+            CloudflareConfig::find_and_load(&file_path).unwrap_or_else(|| config.clone())
+        };
+
         let scripts = extract_scripts(&file_path, &content);
         for script in scripts {
             let allocator = Allocator::default();
             match parse_ast(&allocator, &script) {
                 Ok(ast) => {
                     if category == RuleCategory::All || category == RuleCategory::NodeCompat {
-                        let mut node_linter = NodeCompatLinter::new(&file_path, &content, &config);
+                        let mut node_linter = NodeCompatLinter::new(&file_path, &content, &effective_config);
                         node_linter.lint_ast(&ast);
                         for diag in node_linter.diagnostics {
                             report.add_diagnostic(diag);
