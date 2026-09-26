@@ -1,8 +1,12 @@
 # flarelint
 
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-code.brandonhubbard.com-brightgreen?logo=github)](https://code.brandonhubbard.com/flarelint/)
+
 > **Unified, nanosecond-fast Rust AST static analysis and edge compatibility linter for Cloudflare Workers & Astro applications.**
 
 `flarelint` consolidates `oxlint-plugin-cloudflare`, `oxc-astro-cf`, `oxc-cf-router`, `oxc-cf-assets`, `oxc-do-storage`, and `edge-compat-auditor` into a high-performance native binary written in Rust 2024 using the `oxc` AST engine.
+
+> 🎮 **Live Interactive Visualizer & Demo:** [flarelint on code.brandonhubbard.com](https://code.brandonhubbard.com/flarelint/)
 
 ---
 
